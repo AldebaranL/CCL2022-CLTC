@@ -84,11 +84,9 @@ class Seq2Labels(Model):
         input_dim = text_field_embedder.get_output_dim()
         if hidden_layers > 0:
             self.tag_labels_hidden_layers.append(TimeDistributed(
-                Linear(input_dim,
-                       hidden_dim)).cuda(self.device))
+                Linear(input_dim,hidden_dim)).cuda(self.device))
             self.tag_detect_hidden_layers.append(TimeDistributed(
-                Linear(input_dim,
-                       hidden_dim)).cuda(self.device))
+                Linear(input_dim,hidden_dim)).cuda(self.device))
             for _ in range(hidden_layers - 1):
                 self.tag_labels_hidden_layers.append(TimeDistributed(
                     Linear(hidden_dim, hidden_dim)).cuda(self.device))

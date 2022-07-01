@@ -114,6 +114,7 @@ def get_model(model_name, vocab, tune_bert=False, predictor_dropout=0,
 
 
 def main(args):
+    #输出处理
     fix_seed(args.seed)
     if not os.path.exists(args.model_dir):
         os.mkdir(args.model_dir)
@@ -126,6 +127,7 @@ def main(args):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    #读入数据train_data、dev_data
     weights_name = args.weights_name
     reader = get_data_reader(weights_name, args.max_len, skip_correct=bool(args.skip_correct),
                              skip_complex=args.skip_complex,
@@ -152,6 +154,7 @@ def main(args):
     print("Data is loaded")
     logger.info("Data is loaded")
 
+    #加载模型
     model = get_model(weights_name, vocab,
                       tune_bert=args.tune_bert,
                       predictor_dropout=args.predictor_dropout,

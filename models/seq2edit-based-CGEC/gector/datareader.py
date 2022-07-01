@@ -79,6 +79,9 @@ class Seq2LabelsDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
+        '''
+        读入file_path的全部句子，每次调用_read时输出一句的field（使用yield输出）
+        '''
         # if `file_path` is a URL, redirect to the cache
         file_path = cached_path(file_path)
         with open(file_path, "r") as data_file:
@@ -107,9 +110,18 @@ class Seq2LabelsDatasetReader(DatasetReader):
                     tags = None if tags is None else tags[:self._max_len]
                 instance = self.text_to_instance(tokens, tags, words)
                 if instance:
-                    yield instance
+                    yield instance #输出一个句子的field
 
     def extract_tags(self, tags: List[str]):
+        '''
+        输入一个句子的tags，实现了如下几个处理：
+            * 若需要过滤编辑次数过多的token(一个token即一个汉字)，则过滤（保持原token不变）
+            * 对每个token，只保留一个编辑label，生成labels_final,其维度为[seq_length]
+            * 对每个token，输出是否变化的tag（"CORRECT"/"INCORRECT"）,
+              生成detect_tags，其维度为[seq_length]
+            * 统计编辑次数大于idx的token个数，生成complex_flag_dict
+        输出：labels_final, detect_tags, complex_flag_dict
+        '''
         op_del = self._delimeters['operations']
 
         labels = [x.split(op_del) for x in tags]  # 将每个source token的所有编辑label分开
@@ -141,12 +153,16 @@ class Seq2LabelsDatasetReader(DatasetReader):
             raise Exception("Incorrect tag strategy")
 
         detect_tags = ["CORRECT" if label == "$KEEP" else "INCORRECT" for label in labels_final]  # 抽取一下当前token是否有误的标签，后面要用到。
+        #print("len(labels_final) is %d"%(len(labels_final[0])))
+        #print(labels_final[0])
         return labels_final, detect_tags, complex_flag_dict
 
     def text_to_instance(self, tokens: List[Token],
                          tags: List[str] = None,
                          words: List[str] = None) -> Instance:  # type: ignore
         """
+        处理一个句子，输出一个field，包括该句的tokens、metadata、labels、d_tags
+         （多个field就组成一个batch）
         We take `pre-tokenized` input here, because we don't have a tokenizer in this class.
         """
         # pylint: disable=arguments-differ
